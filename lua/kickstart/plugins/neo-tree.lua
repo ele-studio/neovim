@@ -13,7 +13,7 @@ return {
   },
   lazy = false,
   keys = {
-    { '<space>e', ':Neotree reveal<CR>', desc = 'NeoTree reveal', silent = true },
+    { '<space>e', ':Neotree toggle<CR>', desc = 'NeoTree toggle', silent = true },
   },
   ---@module 'neo-tree'
   ---@type neotree.Config

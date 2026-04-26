@@ -91,7 +91,7 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.o`
@@ -167,9 +167,19 @@ vim.o.confirm = true
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
+local function close_floating_windows()
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    local config = vim.api.nvim_win_get_config(win)
+    if config.relative ~= '' then pcall(vim.api.nvim_win_close, win, false) end
+  end
+end
+
 -- Clear highlights on search when pressing <Esc> in normal mode
 --  See `:help hlsearch`
-vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
+vim.keymap.set('n', '<Esc>', function()
+  close_floating_windows()
+  vim.cmd 'nohlsearch'
+end, { desc = 'Close floating windows and clear search highlight' })
 
 -- Mac-like keybindings
 vim.keymap.set({ 'n', 'v' }, '<D-c>', '"+y', { desc = 'Copy to system clipboard' })
@@ -416,10 +426,30 @@ require('lazy').setup({
 
       -- See `:help telescope.builtin`
       local builtin = require 'telescope.builtin'
+      local themes = require 'telescope.themes'
       vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
       vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
-      vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
-      vim.keymap.set('n', '<leader>ff', builtin.find_files, { desc = 'Find files' })
+      vim.keymap.set('n', '<leader>sf', function()
+        builtin.find_files(themes.get_dropdown {
+          previewer = false,
+          hidden = true,
+          follow = true,
+        })
+      end, { desc = '[S]earch [F]iles (hidden)' })
+      vim.keymap.set('n', '<leader>ff', function()
+        builtin.find_files(themes.get_dropdown {
+          previewer = false,
+          hidden = true,
+          follow = true,
+        })
+      end, { desc = 'Find files (hidden)' })
+      vim.keymap.set('n', '<leader>fF', function()
+        builtin.find_files {
+          hidden = true,
+          follow = true,
+          no_ignore = true,
+        }
+      end, { desc = 'Find files (all, incl. ignored)' })
       vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
       vim.keymap.set({ 'n', 'v' }, '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
       vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
@@ -567,6 +597,12 @@ require('lazy').setup({
           -- WARN: This is not Goto Definition, this is Goto Declaration.
           --  For example, in C this would take you to the header.
           map('grD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
+          map('gd', vim.lsp.buf.definition, '[G]oto [D]efinition')
+
+          -- Cursor-like symbol inspection: hover docs + callable signature help.
+          map('K', vim.lsp.buf.hover, 'Hover Documentation')
+          map('gK', vim.lsp.buf.signature_help, 'Signature Help')
+          map('<C-k>', vim.lsp.buf.signature_help, 'Signature Help', 'i')
 
           -- The following two autocommands are used to highlight references of the
           -- word under your cursor when your cursor rests there for a little while.
@@ -930,6 +966,8 @@ require('lazy').setup({
   -- require 'kickstart.plugins.lint',
   -- require 'kickstart.plugins.autopairs',
   require 'kickstart.plugins.neo-tree',
+  require 'kickstart.plugins.markdown',
+  require 'kickstart.plugins.tabs',
   -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommended keymaps
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
